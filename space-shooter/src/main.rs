@@ -14,6 +14,9 @@ const G: f32 = 0.1;
 const eps: f32 = 0.01; // Don't let it get too low :P
 const friction: f32 = 0.00000001;
 const max_vel: f32 = 40.0; // isotropic
+const bullet_mass: f32 = 0.1; // Usually smaller than the shit below
+const bullet_r: f32 = 4.0;
+const bullet_addable_tinterval: i32 = 60; // _ frames => 1 bullet at most
 
 #[macroquad::main("space-shooter")]
 async fn main() {
@@ -42,6 +45,7 @@ async fn main() {
         }),
         sprite_type: SpriteType::Player,
         controller: Some(player_controller1),
+        bullet_interval_counter: 0,
     };
 
     let player_controller2 = Controller {
@@ -66,6 +70,7 @@ async fn main() {
         }),
         sprite_type: SpriteType::Player,
         controller: Some(player_controller2),
+        bullet_interval_counter: 0,
     };
 
     let sun = Sprite {
@@ -78,6 +83,7 @@ async fn main() {
         shape: Shape::Circle(CircleParameters { r: 10.0 }),
         sprite_type: SpriteType::Planet,
         controller: None, // This is not controllable
+        bullet_interval_counter: 0, // stupid shit kms
     };
 
     let mut game = World {
@@ -105,7 +111,11 @@ async fn main() {
 
         // Part 2. Per-Sprite Updates + Draw
         let sprites_clone = game.sprites.clone(); // Really shit but OK, avoid double-borrow mut
+        let mut bullets2add = Vec::<Sprite>::new();
         for (i, sprite1) in (&mut game.sprites).iter_mut().enumerate() {
+            let sprite1clone = sprite1.clone(); // shittiest thing ever: do this so that we don't double-reference (sometimes we need to clone for bullet)
+
+
             // NOTE that sprite1 should be mutable
             // Part 1: get the sprite information
             let sprite_color = match sprite1.sprite_type {
@@ -151,7 +161,19 @@ async fn main() {
                             };
 
                             // Part 2: Spawn Bullets based on controller
-                            // XXX spawn bullets
+                            sprite1.bullet_interval_counter += 1;
+                            if is_key_down(controller.fire_key_code) && sprite1.bullet_interval_counter >= bullet_addable_tinterval {
+                                // Inherit the momentum: kind of dumb but whatever TODO(Adriano) make a better aiming paradigm
+                                let mut bullet = sprite1clone; // kind of shit but ok
+                                bullet.mass = bullet_mass;
+                                bullet.shape = Shape::Circle(CircleParameters{
+                                    r: bullet_r,
+                                });
+                                bullet.sprite_type = SpriteType::Bullet;
+                                bullet.controller = None;
+                                bullets2add.push(bullet);
+                                sprite1.bullet_interval_counter = 0;
+                            }
                         }
                         None => {} // NOOP
                     };
@@ -226,6 +248,9 @@ async fn main() {
                 }
             };
         }
+
+        // Part 2.5: Add this dummy shit for next iteration (lmao this is stupid)
+        game.sprites = game.sprites.iter().chain(bullets2add.iter()).cloned().collect(); // super shit TODO(Adriano)
 
         // Part 5. Display
         next_frame().await

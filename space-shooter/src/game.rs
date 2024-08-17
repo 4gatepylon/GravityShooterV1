@@ -47,6 +47,7 @@ pub struct Sprite {
     pub shape: Shape,
     pub sprite_type: SpriteType,
     pub controller: Option<Controller>,
+    pub bullet_interval_counter: i32,
 }
 
 #[derive(Clone)] // Only clone
