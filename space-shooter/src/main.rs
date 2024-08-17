@@ -22,7 +22,7 @@ const bullet_addable_tinterval: usize = 60; // _ frames => 1 bullet at most
 #[macroquad::main("space-shooter")]
 async fn main() {
     // :/
-    let max_width = 600.0;
+    let max_width = 800.0;
 
     //////////////// MOVING BOX ////////////////
     // Make sure these are defined outside the loop to avoid going out of scope
@@ -168,8 +168,8 @@ async fn main() {
                             {
                                 // Inherit the momentum: kind of dumb but whatever TODO(Adriano) make a better aiming paradigm
                                 let mut bullet = sprite1clone; // kind of shit but ok
-                                bullet.loc.x += 50.0; // Please no hardcody TODO(Adriano)
-                                bullet.loc.y += 50.0; // Please no hardcody TODO(Adriano)
+                                bullet.loc.x += if bullet.vel.unwrap().x > 0 { 50.0 } else { -50.0 }; // Please no hardcody TODO(Adriano)
+                                bullet.loc.y += if bullet.vel.unwrap().y > 0 { 50.0 } else { -50.0 }; // Please no hardcody TODO(Adriano)
                                 bullet.mass = bullet_mass;
                                 bullet.shape = Shape::Circle(CircleParameters { r: bullet_r });
                                 bullet.sprite_type = SpriteType::Bullet;
